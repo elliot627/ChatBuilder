@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <script src="http://chatbuilder.hackreactor.com/ChatBuilder.js"></script>
+  </head>
+  <body>
+    <script>
+      delete Chat.display;
+      delete Chat.fetch;
+      delete Chat.send;
+
+      //////////////////////////////////////////
+      ////////////REBUILT FUNCTIONS/////////////
+      //////////////////////////////////////////
+
+
+      //displays given message, accepts string as only input, appends message to list
+
+      Chat.display = function(message){
+        $("<li class=\"list-group-item\">" + message + "</li>").hide().appendTo(".messages").fadeIn(500);
+      }
+
+
+      //pulls array of data from sever, then passes array to given function
+      Chat.fetch = function(callback){
+        $.get("https://api.parse.com/1/classes/chats", function(data){
+            var chats = data.results;
+            callback(chats);
+        });
+      }
+
+      //Builds JSON message data object and sends it to server
+      Chat.send = function(message){
+        var username = window.location.href.slice(window.location.href.indexOf("username=")).slice(9);
+        var str = username + ": " + message;
+        var data = JSON.stringify({text: str});
+        $.post("https://api.parse.com/1/classes/chats",data);
+      }
+
+
+      //////////////////////////////////////////
+      /////////////HELPER FUNCTIONS/////////////
+      //////////////////////////////////////////
+
+
+      //populates the inital chatroom on load
+      var populate = function(arr){
+        for(var i = 0; i < arr.length; i++){
+          Chat.display(arr[i].text);
+        }
+      }
+
+      //provides sumbit functionality
+      $(document).ready(function(){
+        $(".draft").focus();
+
+        //Desktop view
+
+        $("#draft-lg").keypress(function(event){         //enter key 
+          if(event.charCode === 13){
+            Chat.send($("#draft-lg").val());
+            $("#draft-lg").val('');
+          }
+        });
+
+        $("#send-lg").click(function(){                  //submit button
+          Chat.send($("#draft-lg").val());
+          $("#draft-lg").val('');
+          $("#draft-lg").focus();                 
+        });
+
+        //Mobile view
+
+        $("#draft-sm").keypress(function(event){         //enter key 
+          if(event.charCode === 13){
+            Chat.send($("#draft-sm").val());
+            $("#draft-sm").val('');
+          }
+        });
+
+        $("#send-sm").click(function(){                  //submit button
+          Chat.send($("#draft-sm").val());
+          $("#draft-sm").val('');
+          $("#draft-sm").focus();                 
+        });
+      });
+
+
+      /*updates chatroom  - Checks for and avoids redundant messages(!)
+                          - displays most recent message
+                          - removes oldest message*/
+
+      var update = function(arr){
+        if($(".messages :last-child").text() !== arr[arr.length - 1].text){
+          Chat.display(arr[arr.length - 1].text);
+          $(".messages :first-child").remove();
+        }
+      } 
+
+
+      //populate initial list
+      Chat.fetch(populate);
+
+      //Timer for updating every half second
+      window.setInterval("Chat.fetch(update)",500);
+
+    </script>
+
+    <h2 class="text-center">Chat 9000</h2>
+    <h6 class="text-center visible-lg">(very mobile)</h6>
+
+    <div class="container col-lg-6 col-xs-12 col-lg-push-3">
+
+      <div class="row">
+        <ul class="messages list-group"></ul>
+      </div><!--/.row-->
+
+      <!-- Desktop Input & Send -->
+
+      <div class="row hidden-sm hidden-xs hidden-md">
+        <div class="input-group">
+          <input id="draft-lg" class="input-lg draft form-control" placeholder="What's on your mind?" id="test" type="text"/>
+          <span class="input-group-btn ">
+            <button id="send-lg" class=" btn btn-success btn-lg">Send</button>
+          </span>
+        </div>
+      </div><!--/.row-->
+
+      <!-- /Desktop Input & Send -->
+
+      <!-- Mobile Input & Send -->
+
+      <div class="row visible-xs visible-sm visible-md">
+          <input id="draft-sm" class="input-lg draft form-control" placeholder="What's on your mind?" id="test" type="text"/>
+          <button id="send-sm" class="send btn btn-success col-xs-12 btn-lg">Send</button>
+      </div><!--/.row-->
+
+      <!-- /Mobile Input & Send -->
+      
+    </div><!--/.container-->
+  </body>
+</html>
